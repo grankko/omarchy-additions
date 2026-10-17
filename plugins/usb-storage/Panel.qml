@@ -109,7 +109,7 @@ Panel {
     bar: root.bar
     text: "󰕓"
     onPressed: root.toggle()
-    PanelToolTip { visible: button.tooltipHovered; text: "USB Storage · " + root.drives.length + " connected" }
+    tooltipText: "USB Storage · " + root.drives.length + " connected"
   }
 
   KeyboardPanel {
