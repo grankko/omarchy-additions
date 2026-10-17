@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+
+fail() {
+  jq -cn --arg message "$1" '{ok:false,message:$message}'
+  exit 1
+}
+
+snapshot() {
+  local raw
+  raw=$(busctl --system --timeout=8 --json=short call org.freedesktop.UDisks2 \
+    /org/freedesktop/UDisks2 org.freedesktop.DBus.ObjectManager GetManagedObjects) || return
+  jq -ce -f "$ROOT/snapshot.jq" <<<"$raw"
+}
+
+identity() {
+  # Match the full sibling membership as well as the selected attachment.
+  jq -ce --arg path "$1" --arg id "$2" --arg attached "$3" \
+    '.[] | select(.path == $path and .id == $id and .attached == $attached)'
+}
+
+remove_drive() {
+  [[ $# == 3 && $1 == /org/freedesktop/UDisks2/drives/* && -n $2 && $3 =~ ^[0-9]+$ ]] || fail "Invalid device selection"
+  local path=$1 id=$2 attached=$3 state selected group fingerprint current output volume member
+  [[ -n ${XDG_RUNTIME_DIR:-} && -d $XDG_RUNTIME_DIR && -O $XDG_RUNTIME_DIR ]] || fail "User runtime directory is unavailable"
+  # One lock across all instances/screens. No background job can outlive it.
+  exec 9>"$XDG_RUNTIME_DIR/grankko-usb-storage.lock"
+  flock -n 9 || fail "Another drive removal is already in progress"
+  state=$(snapshot) || fail "Could not read storage state"
+  selected=$(identity "$path" "$id" "$attached" <<<"$state") || fail "The drive changed or was disconnected; select it again"
+  [[ $(jq -r '.reason' <<<"$selected") == "" ]] || fail "$(jq -r '.reason' <<<"$selected")"
+  fingerprint=$(jq -cS '.members | sort_by(.path)' <<<"$selected")
+  group=$(jq -r '.group' <<<"$selected")
+
+  # Refresh before EVERY mutation. A replaced attachment or changed sibling
+  # set must not inherit the authority of a click on the previous device.
+  revalidate() {
+    state=$(snapshot) || fail "Could not refresh storage state"
+    current=$(identity "$path" "$id" "$attached" <<<"$state") || fail "The drive changed or was disconnected; select it again"
+    [[ $(jq -r '.reason' <<<"$current") == "" ]] || fail "$(jq -r '.reason' <<<"$current")"
+    [[ $(jq -r '.group' <<<"$current") == "$group" ]] || fail "Connected storage changed; select it again"
+    [[ $(jq -cS '.members | sort_by(.path)' <<<"$current") == "$fingerprint" ]] || fail "Connected storage changed; select it again"
+  }
+
+  while IFS= read -r volume; do
+    [[ -n $volume ]] || continue
+    revalidate
+    # Another app may already have unmounted this volume; skip it then.
+    if jq -e --arg p "$volume" '.volumes[] | select(.path == $p and .mounted)' <<<"$current" >/dev/null; then
+      if ! output=$(udisksctl unmount --object-path "${volume#/org/freedesktop/UDisks2/}" 2>&1); then
+        if [[ ${output,,} == *busy* ]]; then
+          fail "Drive is busy—close files or terminal windows using it, then try again"
+        fi
+        fail "Unmount failed: $output"
+      fi
+    fi
+  done < <(jq -r '.volumes[] | select(.mounted) | .path' <<<"$selected")
+
+  revalidate
+  jq -e 'all(.volumes[]; .mounted | not)' <<<"$current" >/dev/null || fail "A volume is still mounted; nothing was powered off"
+  if ! output=$(udisksctl power-off --object-path "${path#/org/freedesktop/UDisks2/}" 2>&1); then
+    fail "Power-off failed: $output"
+  fi
+  # UDisks emits removal asynchronously; never retry the mutating request.
+  for ((i=0; i<20; i++)); do
+    state=$(snapshot) || fail "Power-off returned, but completion could not be verified"
+    if ! jq -e --arg g "$group" '.[] | select(.group == $g)' <<<"$state" >/dev/null; then
+      jq -cn '{ok:true,message:"Safe to unplug"}'
+      return
+    fi
+    sleep 0.25
+  done
+  fail "Power-off returned, but the device is still present; check it before unplugging"
+}
+
+case ${1:-} in
+  snapshot) snapshot ;;
+  remove) shift; remove_drive "$@" ;;
+  *) echo 'Usage: usb-storage snapshot | remove DRIVE_OBJECT_PATH DRIVE_ID ATTACHMENT_TIMESTAMP' >&2; exit 2 ;;
+esac

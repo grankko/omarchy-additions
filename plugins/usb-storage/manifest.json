@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "grankko.usb-storage",
+  "name": "USB Storage",
+  "version": "0.1.0",
+  "author": "grankko",
+  "description": "Safely remove USB storage from the Omarchy bar",
+  "kinds": ["bar-widget"],
+  "entryPoints": {"barWidget": "Panel.qml"},
+  "barWidget": {
+    "displayName": "USB Storage",
+    "description": "Connected USB drives and safe removal",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
