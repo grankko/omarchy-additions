@@ -1,6 +1,8 @@
 # Image viewer review and implementation handoff
 
-Reviewed: 2026-11-05. Status: **plan only; no implementation changes made**.
+Reviewed: 2026-11-05. Status at review: **plan only**.
+See the [v0.2 implementation and QA report](../apps/image-viewer/docs/qa-v0.2.md)
+for follow-up evidence.
 
 Audience: an implementation agent working at a lower reasoning budget. Execute
 the numbered work packages below in order, keeping each change independently

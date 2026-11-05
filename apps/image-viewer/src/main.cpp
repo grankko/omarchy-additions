@@ -6,6 +6,7 @@
 #include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QImageReader>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -52,7 +53,7 @@ int main(int argc, char *argv[])
     }
     QGuiApplication app(argc, argv);
     app.setApplicationName("omarchy-image-viewer");
-    app.setApplicationVersion("0.1.0");
+    app.setApplicationVersion(QStringLiteral(VIEWER_VERSION));
     app.setDesktopFileName("omarchy-image-viewer");
     app.setWindowIcon(QIcon::fromTheme("omarchy-image-viewer"));
 
@@ -72,7 +73,8 @@ int main(int argc, char *argv[])
     const QUrl url(input);
     const auto path = url.isLocalFile() ? url.toLocalFile() : input;
     if (parser.isSet(formats))
-        return report({{"formats", QJsonArray::fromStringList(ImageIO::formats())}}, {}, parser.isSet(json));
+        return report({{"formats", QJsonArray::fromStringList(ImageIO::formats())},
+                       {"imageAllocationLimitMiB", QImageReader::allocationLimit()}}, {}, parser.isSet(json));
     if (parser.isSet(inspect) || parser.isSet(rotate)) {
         if (positionals.size() != 1 || (parser.isSet(inspect) && parser.isSet(rotate)))
             return report({}, "Specify one operation and one image.", parser.isSet(json));
@@ -84,7 +86,11 @@ int main(int argc, char *argv[])
             if (degrees != 90 && degrees != 180 && degrees != 270)
                 return report({}, "Rotation must be 90, 180, or 270 degrees.", parser.isSet(json));
             const auto result = ImageIO::save(path, source, degrees / 90);
-            return report({{"saved", result.stamp.valid}}, result.error, parser.isSet(json));
+            QJsonObject data{{"saved", result.committed()},
+                             {"uncertain", result.outcome == ImageIO::SaveOutcome::Uncertain}};
+            if (!result.durabilityWarning.isEmpty())
+                data.insert("warning", result.durabilityWarning);
+            return report(data, result.error, parser.isSet(json));
         }
         return report({{"width", source.original.width()}, {"height", source.original.height()},
                        {"format", QString::fromLatin1(source.format)}, {"saveBlock", source.saveBlock}},
@@ -103,6 +109,7 @@ int main(int argc, char *argv[])
     Backend backend;
     QQmlApplicationEngine engine;
     QObject::connect(&translator, &Translator::changed, &engine, &QQmlEngine::retranslate);
+    QObject::connect(&translator, &Translator::changed, &backend, &Backend::stateChanged);
     engine.rootContext()->setContextProperty("viewer", &backend);
     engine.rootContext()->setContextProperty("omarchyTheme", &theme);
     engine.load(QUrl("qrc:/Main.qml"));

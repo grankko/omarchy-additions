@@ -1,28 +1,32 @@
 pkgname=omarchy-image-viewer
-pkgver=0.1.0
-pkgrel=3
+pkgver=0.2.0
+pkgrel=1
 pkgdesc='A minimal photo viewer for Omarchy'
 arch=('x86_64' 'aarch64')
 license=('MIT')
-depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'qt6-imageformats' 'qt6-svg'
+depends=('qt6-base>=6.12' 'qt6-declarative' 'qt6-wayland' 'qt6-imageformats' 'qt6-svg'
          'kimageformats' 'libheif' 'libavif' 'libjxl' 'openjpeg2' 'openexr'
          'libjpeg-turbo' 'exiv2' 'xdg-desktop-portal')
 optdepends=('localsend: send photos to nearby devices')
 makedepends=('gcc' 'make')
-source=()
-sha256sums=()
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('d9640ce7db7ecbdf697431972ef47c62969eead2adc4744b4bd6cb663d08e9b0')
 
 build() {
-  "$startdir/../bin/build"
+  cd "$srcdir/$pkgname-$pkgver"
+  test "$(cat VERSION)" = "$pkgver"
+  VIEWER_BUILD_DIR="$srcdir/viewer-build" ./bin/build
 }
 
 check() {
-  "$startdir/../bin/test"
+  cd "$srcdir/$pkgname-$pkgver"
+  VIEWER_BUILD_DIR="$srcdir/viewer-tests" ./bin/test
 }
 
 package() {
-  install -Dm755 "$startdir/../build/$pkgname" "$pkgdir/usr/bin/$pkgname"
-  install -Dm644 "$startdir/../../../LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 "$startdir/$pkgname.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/$pkgname.svg"
-  install -Dm644 "$startdir/$pkgname.desktop" "$pkgdir/usr/share/applications/$pkgname.desktop"
+  cd "$srcdir/$pkgname-$pkgver"
+  install -Dm755 "$srcdir/viewer-build/$pkgname" "$pkgdir/usr/bin/$pkgname"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "pkgbuild/$pkgname.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/$pkgname.svg"
+  install -Dm644 "pkgbuild/$pkgname.desktop" "$pkgdir/usr/share/applications/$pkgname.desktop"
 }

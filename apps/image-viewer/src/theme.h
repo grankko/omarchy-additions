@@ -14,7 +14,7 @@ class Theme : public QObject
     Q_PROPERTY(int radius MEMBER m_radius NOTIFY changed)
 
 public:
-    Theme();
+    explicit Theme(QString currentDirectory = {});
     QColor foreground() const;
 
 signals:
@@ -24,6 +24,8 @@ private:
     void reload();
     void refreshRounding();
 
+    QString m_currentDirectory;
+    bool m_followCompositor;
     QFileSystemWatcher m_watcher;
     QProcess m_process;
     QTimer m_timeout;

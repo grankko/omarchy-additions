@@ -7,7 +7,9 @@
 #include <QJsonDocument>
 #include <QLocale>
 
-Translator::Translator() : m_path(QDir::homePath() + "/.config/omarchy/language")
+Translator::Translator(QString languagePath, QString catalogDirectory)
+    : m_path(languagePath.isEmpty() ? QDir::homePath() + "/.config/omarchy/language" : languagePath),
+      m_catalogDirectory(std::move(catalogDirectory))
 {
     connect(&m_watcher, &QFileSystemWatcher::fileChanged, this, &Translator::reload);
     connect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, &Translator::reload);
@@ -26,19 +28,22 @@ void Translator::reload()
     QFile language(m_path);
     if (language.open(QIODevice::ReadOnly))
         locale = QLocale(QString::fromUtf8(language.readLine()).trimmed());
-    QLocale::setDefault(locale);
     QGuiApplication::setLayoutDirection(locale.textDirection());
 
-    QFile catalog(":/i18n/" + locale.name().section('_', 0, 0) + ".json");
+    QFile catalog(m_catalogDirectory + "/" + locale.name().section('_', 0, 0) + ".json");
     const QJsonObject strings = catalog.open(QIODevice::ReadOnly)
         ? QJsonDocument::fromJson(catalog.readAll()).object() : QJsonObject{};
-    if (m_strings != strings) {
+    {
+        QWriteLocker lock(&m_catalogLock);
+        if (m_strings == strings)
+            return;
         m_strings = strings;
-        emit changed();
     }
+    emit changed();
 }
 
 QString Translator::translate(const char *, const char *source, const char *, int) const
 {
+    QReadLocker lock(&m_catalogLock);
     return m_strings.value(QString::fromUtf8(source)).toString();
 }

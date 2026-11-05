@@ -1,8 +1,15 @@
 #!/bin/sh
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-mkdir -p "$root/build/tests"
-cd "$root/build/tests"
+out=${VIEWER_BUILD_DIR:-"$root/build/tests"}
+mkdir -p "$out"
+cd "$out"
 qmake6 "$root/tests/viewer-tests.pro"
 make -j"${JOBS:-4}"
-QT_FORCE_STDERR_LOGGING=1 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software ./viewer-tests "$@"
+export QT_FORCE_STDERR_LOGGING=1
+export QT_QPA_PLATFORM=${VIEWER_TEST_PLATFORM:-offscreen}
+if [ "$QT_QPA_PLATFORM" = offscreen ]; then
+    export QT_QUICK_BACKEND=${QT_QUICK_BACKEND:-software}
+    exec dbus-run-session --config-file="$root/tests/session.conf" -- env -u WAYLAND_DISPLAY -u DISPLAY -u HYPRLAND_INSTANCE_SIGNATURE -u QT_QPA_PLATFORMTHEME VIEWER_TEST_ISOLATED_BUS=1 ./viewer-tests "$@"
+fi
+exec ./viewer-tests "$@"

@@ -3,3 +3,4 @@
 /pkgbuild/src/
 /pkgbuild/*.pkg.tar.*
 /pkgbuild/*.log.[0-9]*
+/pkgbuild/omarchy-image-viewer-*.tar.gz

@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+version=$(cat "$root/VERSION")
+stage=$(mktemp -d)
+trap 'rm -r -- "$stage"' EXIT
+name=omarchy-image-viewer-$version
+dest=$stage/$name
+mkdir -p "$dest"/bin "$dest"/pkgbuild "$dest"/src/i18n "$dest"/tests
+cd "$root"
+cp -p VERSION image-viewer.pro "$dest/"
+cp -p bin/build bin/test "$dest/bin/"
+cp -p pkgbuild/omarchy-image-viewer.desktop pkgbuild/omarchy-image-viewer.svg "$dest/pkgbuild/"
+cp -p src/*.cpp src/*.h src/*.qml src/*.pri src/*.qrc "$dest/src/"
+cp -p src/i18n/*.json "$dest/src/i18n/"
+cp -p tests/*.cpp tests/*.h tests/*.pro tests/session.conf "$dest/tests/"
+cp -p ../../LICENSE "$dest/"
+archive=$root/pkgbuild/$name.tar.gz
+tar --sort=name --format=gnu --mtime=@0 --owner=0 --group=0 --numeric-owner \
+    --mode='u+rwX,go+rX,go-w' -C "$stage" -cf "$stage/source.tar" "$name"
+gzip -n -c "$stage/source.tar" > "$archive"
+sha256sum "$archive"

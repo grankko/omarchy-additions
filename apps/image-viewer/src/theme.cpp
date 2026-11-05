@@ -8,7 +8,10 @@
 #include <QRegularExpression>
 #include <cmath>
 
-Theme::Theme()
+Theme::Theme(QString currentDirectory)
+    : m_currentDirectory(currentDirectory.isEmpty() ? QDir::homePath() + "/.local/state/omarchy/current"
+                                                    : currentDirectory),
+      m_followCompositor(currentDirectory.isEmpty() && !qEnvironmentVariableIsEmpty("HYPRLAND_INSTANCE_SIGNATURE"))
 {
     connect(&m_watcher, &QFileSystemWatcher::fileChanged, this, &Theme::reload);
     connect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, &Theme::reload);
@@ -16,13 +19,16 @@ Theme::Theme()
         m_timeout.stop();
         const auto result = QJsonDocument::fromJson(m_process.readAllStandardOutput()).object();
         if (code == 0 && status == QProcess::NormalExit && result.value("int").isDouble()) {
-            m_radius = qMax(0, result.value("int").toInt());
-            emit changed();
+            const int radius = qMax(0, result.value("int").toInt());
+            if (m_radius != radius) {
+                m_radius = radius;
+                emit changed();
+            }
         }
     });
     m_timeout.setSingleShot(true);
     connect(&m_timeout, &QTimer::timeout, &m_process, &QProcess::kill);
-    if (!qEnvironmentVariableIsEmpty("HYPRLAND_INSTANCE_SIGNATURE")) {
+    if (m_followCompositor) {
         auto *poll = new QTimer(this);
         poll->setInterval(15000);
         connect(poll, &QTimer::timeout, this, &Theme::refreshRounding);
@@ -43,7 +49,7 @@ QColor Theme::foreground() const
 
 void Theme::refreshRounding()
 {
-    if (!qEnvironmentVariableIsEmpty("HYPRLAND_INSTANCE_SIGNATURE") && m_process.state() == QProcess::NotRunning) {
+    if (m_followCompositor && m_process.state() == QProcess::NotRunning) {
         m_process.start("hyprctl", {"-j", "getoption", "decoration:rounding"});
         m_timeout.start(750);
     }
@@ -51,7 +57,7 @@ void Theme::refreshRounding()
 
 void Theme::reload()
 {
-    const QString current = QDir::homePath() + "/.local/state/omarchy/current";
+    const QString &current = m_currentDirectory;
     const QString filePath = current + "/theme/colors.toml";
     const auto old = m_watcher.directories() + m_watcher.files();
     if (!old.isEmpty())
@@ -70,7 +76,9 @@ void Theme::reload()
         if (match.hasMatch())
             accent = QColor(match.captured(1));
     }
-    m_accent = accent;
-    emit changed();
+    if (m_accent != accent) {
+        m_accent = accent;
+        emit changed();
+    }
     refreshRounding();
 }

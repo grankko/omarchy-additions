@@ -8,7 +8,7 @@ right-click the photo for more actions.
 
 ## Build and run
 
-On Omarchy, build with qmake6, a C++ compiler, and make.
+On Omarchy, build with Qt 6.12 or newer, qmake6, a C++ compiler, and make.
 
 ```bash
 ./bin/build
@@ -62,7 +62,8 @@ Open a photo using its mounted path. The viewer lists the folder in the
 background and reads ahead one neighbor at a time, in the direction of travel
 first. A 48 MiB RAM cache holds decoded neighbor previews. The displayed photo
 stays visible until the requested image is ready, and a warm preview is
-rechecked in the background. **Refresh folder** clears the cache and updates
+rechecked in the background. After a failed read, press the arrow again to
+continue past that entry. Fit drops the separate zoom detail buffer. **Refresh folder** clears the cache and updates
 the list. **Reload image** requests a fresh read of the current file.
 
 LocalSend receives the saved file at its filesystem path. With an unsaved
@@ -77,3 +78,17 @@ version.
 ```
 
 `--rotate` uses the same in-place writer as **Save**.
+
+## Development and QA
+
+See [agent instructions](AGENTS.md), [architecture](docs/architecture.md), and
+[the v0.2 QA report](docs/qa-v0.2.md). Use `./bin/source` to generate the local
+source archive used by makepkg. The PKGBUILD pins its checksum.
+
+Filesystem calls on a disconnected mount can block in the kernel. The viewer
+can invalidate their results and keep unrelated worker lanes responsive.
+A blocked foreground call can still delay the next cold read, and a blocked
+worker can delay process exit. Save conflict checks use filesystem identity and
+metadata, which can be cached by a remote client. The viewer verifies a
+replacement before clearing the edit and reports directory-sync failures
+separately from failed or uncertain replacements.
