@@ -3,6 +3,10 @@
 Small, reusable additions for Omarchy. The first is **USB Storage**, a native
 Quickshell panel for safely disconnecting USB storage.
 
+**Image Viewer** is a standalone Qt Quick app with floating controls and
+read-ahead for mounted folders. See the [viewer README](apps/image-viewer/README.md)
+and [implementation plan](docs/image-viewer-plan.md).
+
 ## USB Storage
 
 ![USB Storage panel](docs/usb-storage.png)
@@ -91,8 +95,9 @@ Tests use synthetic D-Bus data and fake `busctl`/`udisksctl` executables in temp
 directories. They never touch real storage. Live removal tests require a deliberately
 selected disposable/test drive and explicit operator authorization.
 
-Contributions should keep each addition self-contained under `plugins/`, retain
-Omarchy's native appearance, and avoid machine-specific paths or identifiers.
+Keep shell plugins self-contained under `plugins/` and standalone apps under
+`apps/`. Retain Omarchy's native appearance and avoid machine-specific paths or
+identifiers.
 
 ## License
 

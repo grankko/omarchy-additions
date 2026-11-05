@@ -1,0 +1,5 @@
+/build/
+/pkgbuild/pkg/
+/pkgbuild/src/
+/pkgbuild/*.pkg.tar.*
+/pkgbuild/*.log.[0-9]*

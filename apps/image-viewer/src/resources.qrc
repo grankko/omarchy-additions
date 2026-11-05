@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Main.qml</file>
+        <file>DockButton.qml</file>
+        <file>Glyph.qml</file>
+        <file>ViewerMenu.qml</file>
+        <file>ViewerMenuItem.qml</file>
+        <file>i18n/sv.json</file>
+        <file>i18n/da.json</file>
+    </qresource>
+</RCC>

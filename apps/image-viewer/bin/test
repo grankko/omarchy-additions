@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+mkdir -p "$root/build/tests"
+cd "$root/build/tests"
+qmake6 "$root/tests/viewer-tests.pro"
+make -j"${JOBS:-4}"
+QT_FORCE_STDERR_LOGGING=1 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software ./viewer-tests "$@"

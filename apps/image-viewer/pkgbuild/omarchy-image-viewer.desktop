@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Image Viewer
+Name[sv]=Bildvisare
+Name[da]=Billedviser
+Comment=Browse and rotate photos
+Comment[sv]=Bläddra bland och rotera foton
+Comment[da]=Gennemse og roter billeder
+Exec=omarchy-image-viewer -- %f
+Icon=omarchy-image-viewer
+Terminal=false
+Categories=Graphics;Viewer;
+StartupWMClass=omarchy-image-viewer
+MimeType=image/apng;image/bmp;image/gif;image/jp2;image/jpeg;image/png;image/qoi;image/tiff;image/x-jp2-codestream;image/vnd.microsoft.icon;image/webp;image/x-dds;image/x-exr;image/x-portable-anymap;image/x-portable-bitmap;image/x-portable-graymap;image/x-portable-pixmap;image/x-qoi;image/x-win-bitmap;image/x-xbitmap;image/x-xpixmap;image/svg+xml;image/svg+xml-compressed;image/avif;image/heic;image/jxl;image/heif;
