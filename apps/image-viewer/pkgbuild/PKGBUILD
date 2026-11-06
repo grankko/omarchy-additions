@@ -1,5 +1,5 @@
 pkgname=omarchy-image-viewer
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc='A minimal photo viewer for Omarchy'
 arch=('x86_64' 'aarch64')
@@ -10,7 +10,7 @@ depends=('qt6-base>=6.12' 'qt6-declarative' 'qt6-wayland' 'qt6-imageformats' 'qt
 optdepends=('localsend: send photos to nearby devices')
 makedepends=('gcc' 'make')
 source=("$pkgname-$pkgver.tar.gz")
-sha256sums=('d9640ce7db7ecbdf697431972ef47c62969eead2adc4744b4bd6cb663d08e9b0')
+sha256sums=('2350493a89402fbb50056c6f815375ffd6975b46573f67d4abc3f9756684bac9')
 
 build() {
   cd "$srcdir/$pkgname-$pkgver"

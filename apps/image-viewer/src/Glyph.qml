@@ -51,6 +51,10 @@ Canvas {
             context.stroke()
             line([15, 3, 15, 8, 10, 8])
             break
+        case "close":
+            line([5.5, 5.5, 12.5, 12.5])
+            line([12.5, 5.5, 5.5, 12.5])
+            break
         case "more":
             for (let x = 4; x <= 14; x += 5) {
                 context.beginPath()

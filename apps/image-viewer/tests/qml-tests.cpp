@@ -116,6 +116,23 @@ void ViewerTests::qmlContinuesOnlyAfterVerifiedSave()
     QCOMPARE(backend.turns(), 1);
     QVERIFY(!backend.canSave());
     QVERIFY(backend.statusPersistent());
+
+    auto *close = window->findChild<QQuickItem *>("closeWindowButton");
+    auto *discard = window->findChild<QObject *>("discardUnsaved");
+    QVERIFY(close && discard);
+    const auto atClose = close->mapToScene(close->boundingRect().center()).toPoint();
+    QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, atClose);
+    QTRY_VERIFY(prompt->property("visible").toBool());
+    QVERIFY(window->isVisible());
+    QVERIFY(!save->property("enabled").toBool());
+    QVERIFY(QMetaObject::invokeMethod(cancel, "click"));
+    QTRY_VERIFY(!prompt->property("visible").toBool());
+    QCOMPARE(backend.turns(), 1);
+    QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, atClose);
+    QTRY_VERIFY(prompt->property("visible").toBool());
+    QVERIFY(QMetaObject::invokeMethod(discard, "click"));
+    QTRY_VERIFY(!window->isVisible());
+    QCOMPARE(QImage(second).size(), QSize(40, 40));
 }
 
 void ViewerTests::benchmarkNavigation()

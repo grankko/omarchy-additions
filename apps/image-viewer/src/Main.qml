@@ -129,6 +129,27 @@ ApplicationWindow {
         onContextRequested: (x, y) => contextMenu.popup(x, y)
     }
 
+    DockButton {
+        id: closeButton
+        objectName: "closeWindowButton"
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 12
+        implicitWidth: 26
+        implicitHeight: 26
+        description: qsTr("Close")
+        glyph: "close"
+        tipsEnabled: false
+        onClicked: window.close()
+
+        background: Rectangle {
+            radius: width / 2
+            color: closeButton.down ? "#505054" : closeButton.hovered ? "#434347" : "#343437"
+            border.width: closeButton.visualFocus ? 1 : 0
+            border.color: omarchyTheme.accent
+        }
+    }
+
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 10

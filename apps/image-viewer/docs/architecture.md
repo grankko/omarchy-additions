@@ -60,6 +60,7 @@ version, and makepkg checks it against the package version.
 `ImageViewport.qml` takes the backend and the device pixel ratio, and owns fit,
 zoom, pan, and scene-graph presentation. `ViewerDock.qml` emits viewer actions
 and a menu anchor. `UnsavedEdits.qml` receives the current capability and reason
-and emits intent. Main owns continuation, so cancel or a failed save cannot
+and emits intent. The upper-right close button uses the window's normal close
+request, including the existing edit prompt. Main owns continuation, so cancel or a failed save cannot
 execute the queued navigation. Operation and status policy use enums, and
 worker message keys translate through the current catalog on the GUI thread.
