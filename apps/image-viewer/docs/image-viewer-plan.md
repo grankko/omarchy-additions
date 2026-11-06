@@ -1,6 +1,6 @@
 # Omarchy image viewer implementation plan
 
-Status **Implemented**. See the [viewer README](../apps/image-viewer/README.md) and [v0.2 QA report](../apps/image-viewer/docs/qa-v0.2.md) for the current behavior and limits.
+Status **Implemented**. See the [viewer README](../README.md) and [v0.2 QA report](qa-v0.2.md) for the current behavior and limits.
 
 Build a standalone image viewer for Omarchy that makes the most of a small screen and stays responsive when browsing photos on mounted network shares. Use the bottom hover dock and right-click menu from the selected mockups.
 

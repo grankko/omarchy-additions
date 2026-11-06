@@ -1,7 +1,7 @@
 # Image viewer review and implementation handoff
 
 Reviewed: 2026-11-05. Status at review: **plan only**.
-See the [v0.2 implementation and QA report](../apps/image-viewer/docs/qa-v0.2.md)
+See the [v0.2 implementation and QA report](qa-v0.2.md)
 for follow-up evidence.
 
 Audience: an implementation agent working at a lower reasoning budget. Execute
@@ -609,10 +609,10 @@ Run from the repository root at completion:
 ./apps/image-viewer/bin/build
 ./apps/image-viewer/bin/test
 node --test tests/*.test.cjs
-bash -n install.sh uninstall.sh \
-  apps/image-viewer/bin/build apps/image-viewer/bin/test \
-  apps/image-viewer/bin/install apps/image-viewer/pkgbuild/PKGBUILD \
-  plugins/usb-storage/scripts/usb-storage
+for script in apps/image-viewer/bin/* apps/image-viewer/pkgbuild/PKGBUILD \
+  plugins/usb-storage/bin/* plugins/usb-storage/scripts/usb-storage; do
+  bash -n "$script" || exit
+done
 omarchy plugin validate plugins/usb-storage
 git diff --check
 git status --short --untracked-files=all

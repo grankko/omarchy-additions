@@ -13,8 +13,9 @@ fixture. For native QA, run the built or installed binary with a disposable
 fixture under Wayland. Check keyboard, dock, menu, picker, edit recovery, and
 logs on a small or scaled viewport. Capture synthetic content for UI reports.
 From the repository root, run `node --test tests/*.test.cjs`, `bash -n` on each
-root and viewer shell script, `omarchy plugin validate plugins/usb-storage`,
-and `git diff --check` before delivery.
+USB Storage and Image Viewer shell script,
+`omarchy plugin validate plugins/usb-storage`, and `git diff --check` before
+delivery.
 
 Backend owns GUI-thread state and jobs. ImageIO owns format qualification,
 decoding and overwrite. PhotoItem owns scene-graph resources. Main.qml owns

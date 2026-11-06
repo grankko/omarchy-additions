@@ -1,32 +1,38 @@
 # Image Viewer
 
-![The viewer with its floating dock expanded over a photo](../../docs/image-viewer.jpg)
+Image Viewer is a standalone Qt Quick app for browsing, zooming, and rotating
+photos in local and mounted folders on Omarchy.
 
-Image Viewer is a standalone Qt Quick app for Omarchy. The photo fills the
-viewport. Hover or focus the handle at the bottom to reveal the dock, or
-right-click the photo for more actions.
+![Image Viewer with its floating dock expanded over a photo](docs/screenshot.jpg)
 
-## Build and run
+## Install, update, and uninstall
 
-On Omarchy, build with Qt 6.12 or newer, qmake6, a C++ compiler, and make.
+On Omarchy, the installer uses `makepkg` to build and install the Arch package
+with its declared dependencies. Run it from your regular user account.
 
 ```bash
-./bin/build
-./build/omarchy-image-viewer -- /path/to/photo.jpg
-./bin/test
+git clone https://github.com/grankko/omarchy-additions.git
+cd omarchy-additions/apps/image-viewer
+./bin/install
 ```
 
-Run `./bin/install` to build and install the Arch package, then launch
-**Image Viewer** or use the file manager's **Open With** menu. Remove it with
-`sudo pacman -R omarchy-image-viewer`. File associations can be selected in the
-file manager.
+To update, run `git pull` in the checkout and rerun `./bin/install`.
+To uninstall, run `sudo pacman -R omarchy-image-viewer`.
+
+If the compiler runs out of memory, retry with `JOBS=1 ./bin/install`.
+
+## Use
+
+Launch **Image Viewer** or choose it from the file manager’s **Open With** menu.
+Hover over or focus the handle at the bottom of the window to reveal the dock.
+Right-click the photo for more actions.
 
 The package includes dependencies for JPEG, PNG, WebP, TIFF, GIF, BMP, HEIC,
 AVIF, JPEG XL, and other image decoders. Use
 `./build/omarchy-image-viewer --formats` to check the decoders on a source build.
 Animated and multi-page images are shown as a first frame.
 
-## Controls
+### Controls
 
 | Input | Action |
 | --- | --- |
@@ -56,7 +62,7 @@ changes and replaces the original from a temporary sibling. A disconnected
 mount can leave the commit result uncertain, in which case the viewer asks for
 a reload before another save.
 
-## Mounted folders
+### Mounted folders
 
 Open a photo using its mounted path. The viewer lists the folder in the
 background and reads ahead one neighbor at a time, in the direction of travel
@@ -70,20 +76,24 @@ LocalSend receives the saved file at its filesystem path. With an unsaved
 rotation, the viewer offers to save first or open LocalSend with the saved
 version.
 
-## Headless checks
+## Development
+
+Source builds require Qt 6.12 or newer, qmake6, a C++ compiler, and make.
+From this directory, run:
 
 ```bash
+./bin/build
+./bin/test
+./build/omarchy-image-viewer -- /path/to/photo.jpg
 ./build/omarchy-image-viewer --inspect --json -- /path/to/photo.png
 ./build/omarchy-image-viewer --rotate 90 --json -- /path/to/disposable-photo.png
 ```
 
 `--rotate` uses the same in-place writer as **Save**.
 
-## Development and QA
-
-See [agent instructions](AGENTS.md), [architecture](docs/architecture.md), and
-[the v0.2 QA report](docs/qa-v0.2.md). Use `./bin/source` to generate the local
-source archive used by makepkg. The PKGBUILD pins its checksum.
+Use `./bin/source` to generate the local source archive used by makepkg. The
+PKGBUILD pins its checksum. For implementation details and testing notes, see
+the [architecture](docs/architecture.md) and [v0.2 QA report](docs/qa-v0.2.md).
 
 Filesystem calls on a disconnected mount can block in the kernel. The viewer
 can invalidate their results and keep unrelated worker lanes responsive.

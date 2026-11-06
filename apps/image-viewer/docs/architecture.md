@@ -48,7 +48,7 @@ Tests use temporary directories and synthetic images with distinct names, sizes
 and colors. The Qt test executable separates image I/O, backend, integration,
 and QML cases into source files. Replace external boundary behavior with controlled callbacks where
 needed. Avoid sleeps for scheduling assertions. Use disposable fixture copies
-for package and native QA. The [review handoff](../../../docs/image-viewer-review-plan.md)
+for package and native QA. The [review handoff](image-viewer-review-plan.md)
 records the original probes and remaining benchmark procedure.
 
 The package is built from an allowlisted deterministic local archive generated
