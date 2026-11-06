@@ -2,6 +2,15 @@
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 ID=grankko.usb-storage
+printf '%s\n' 'Omarchy Additions is an independent hobby project, provided as is without warranty.' >&2
+if [[ ! -t 0 ]]; then
+  echo 'Run this installer in a terminal to acknowledge the notice.' >&2
+  exit 1
+fi
+if ! read -r -p 'Acknowledge and continue with USB Storage installation? [y/N] ' answer || [[ $answer != [yY] ]]; then
+  echo 'Installation cancelled.' >&2
+  exit 1
+fi
 for tool in omarchy omarchy-shell busctl udisksctl jq flock notify-send stdbuf; do
   command -v "$tool" >/dev/null || { echo "Missing dependency: $tool" >&2; exit 1; }
 done

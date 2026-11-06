@@ -11,7 +11,11 @@ You need Omarchy with support for schema version 1 shell plugins, UDisks2, and
 a desktop Polkit agent. The installer checks for Bash helper dependencies
 including `busctl`, `udisksctl`, `jq`, `flock`, `stdbuf`, and `notify-send`.
 
-From your Omarchy desktop session, run:
+Omarchy Additions is an independent hobby project provided as is, without
+warranty, under the [MIT License](../../LICENSE). The installer asks you to
+acknowledge this before installing or updating USB Storage.
+
+From a terminal in your Omarchy desktop session, run:
 
 ```bash
 git clone https://github.com/grankko/omarchy-additions.git
