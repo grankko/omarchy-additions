@@ -86,5 +86,7 @@
   "Waiting for the save to finish safely…": "Venter på, at filen gemmes sikkert…",
   "%1 — %2": "%1 — %2",
   "The staged JPEG could not be verified.": "Den klargjorte JPEG-fil kunne ikke verificeres.",
-  "The JPEG pixel density could not be updated.": "JPEG-billedets pixeltæthed kunne ikke opdateres."
+  "The JPEG pixel density could not be updated.": "JPEG-billedets pixeltæthed kunne ikke opdateres.",
+  "Open %1 after continuing": "Åbn %1 efter at du fortsætter",
+  "Pinch": "Knib"
 }

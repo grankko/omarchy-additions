@@ -2,6 +2,7 @@
 #include "photoitem.h"
 #include "theme.h"
 #include "translator.h"
+#include "instance.h"
 
 #include <QCommandLineParser>
 #include <QGuiApplication>
@@ -15,6 +16,7 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QScopeGuard>
 #include <algorithm>
 
 namespace {
@@ -37,6 +39,8 @@ int report(const QJsonObject &data, const QString &error, bool json)
 
 int main(int argc, char *argv[])
 {
+    const auto activationToken = qgetenv("XDG_ACTIVATION_TOKEN");
+    qunsetenv("XDG_ACTIVATION_TOKEN");
     // Keep inspection and explicit overwrite commands usable without a compositor.
     const QStringList arguments = [&] {
         QStringList list;
@@ -70,8 +74,10 @@ int main(int argc, char *argv[])
     parser.process(app);
     const auto positionals = parser.positionalArguments();
     const auto input = positionals.value(0);
-    const QUrl url(input);
-    const auto path = url.isLocalFile() ? url.toLocalFile() : input;
+    QString pathError;
+    const auto path = Instance::imagePath(input, pathError);
+    if (!pathError.isEmpty())
+        return report({}, pathError, parser.isSet(json));
     if (parser.isSet(formats))
         return report({{"formats", QJsonArray::fromStringList(ImageIO::formats())},
                        {"imageAllocationLimitMiB", QImageReader::allocationLimit()}}, {}, parser.isSet(json));
@@ -97,6 +103,16 @@ int main(int argc, char *argv[])
                       {}, parser.isSet(json));
     }
 
+    if (positionals.size() > 1)
+        return report({}, "Specify one image to open.", parser.isSet(json));
+    Instance instance;
+    const auto launch = instance.start(path, QString::fromUtf8(activationToken));
+    if (launch == Instance::Result::Forwarded)
+        return 0;
+    if (launch == Instance::Result::Failed)
+        return report({}, instance.error(), parser.isSet(json));
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &instance, &Instance::stop);
+
     // A single photo and small overlays do not need a GPU render pipeline.
     // Keep Qt's renderer override available for systems that benefit from it.
     if (qEnvironmentVariableIsEmpty("QT_QUICK_BACKEND") && qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND"))
@@ -116,7 +132,20 @@ int main(int argc, char *argv[])
     if (engine.rootObjects().isEmpty())
         return 1;
 
-    if (!path.isEmpty())
-        backend.open(path);
+    auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    if (!window)
+        return 1;
+    QObject::connect(&instance, &Instance::openRequested, window,
+                     [window](const QString &image, const QString &token) {
+        if (window->visibility() == QWindow::Minimized)
+            window->showNormal();
+        if (!token.isEmpty())
+            qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
+        const auto clearToken = qScopeGuard([] { qunsetenv("XDG_ACTIVATION_TOKEN"); });
+        window->requestActivate();
+        if (!image.isEmpty())
+            QMetaObject::invokeMethod(window, "requestOpen", Q_ARG(QVariant, image));
+    });
+    instance.setReady();
     return app.exec();
 }

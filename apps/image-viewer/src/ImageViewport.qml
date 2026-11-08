@@ -3,10 +3,11 @@ import Omarchy.Viewer
 
 Item {
     id: viewport
+    objectName: "imageViewport"
     required property var backend
     property real pixels: 1
     readonly property bool showingPhoto: backend.original.width > 0
-    signal contextRequested(real x, real y)
+    property bool interactive: true
     clip: true
     LayoutMirroring.enabled: false
     onPixelsChanged: requestPreview.restart()
@@ -89,9 +90,21 @@ Item {
         rotation: backend.turns * 90
     }
 
+    PinchHandler {
+        objectName: "imagePinch"
+        target: null
+        acceptedDevices: PointerDevice.TouchPad
+        enabled: viewport.interactive && backend.photoActionable
+        rotationAxis.enabled: false
+        xAxis.enabled: false
+        yAxis.enabled: false
+        onScaleChanged: delta => viewport.zoomAt(viewport.zoom * delta,
+                                                centroid.position.x, centroid.position.y)
+    }
+
     MouseArea {
         anchors.fill: parent
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        acceptedButtons: Qt.LeftButton
         cursorShape: pressed && pressedButtons & Qt.LeftButton && viewport.zoom > 1
                      ? Qt.ClosedHandCursor : Qt.ArrowCursor
         property real lastX: 0
@@ -110,12 +123,8 @@ Item {
                 lastY = event.y
             }
         }
-        onClicked: event => {
-            if (event.button === Qt.RightButton)
-                viewport.contextRequested(event.x, event.y)
-        }
         onWheel: event => {
-            if (event.angleDelta.y)
+            if (viewport.interactive && event.angleDelta.y)
                 viewport.zoomAt(viewport.zoom * Math.pow(1.18, event.angleDelta.y / 120), event.x, event.y)
         }
     }

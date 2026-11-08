@@ -38,4 +38,8 @@ private slots:
     void qmlContinuesOnlyAfterVerifiedSave();
     void benchmarkNavigation();
     void qmlShowsDockAndEnablesSaveOnlyForAnEdit();
+    void qmlContextMenuCoversPicture();
+    void qmlNativePinchUsesViewportZoom();
+    void qmlExternalOpenProtectsEdits();
+    void instanceForwardsLaunches();
 };

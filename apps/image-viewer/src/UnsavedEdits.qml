@@ -8,6 +8,7 @@ Dialog {
     property bool sending: false
     property bool canSave: false
     property string saveBlock: ""
+    property string destination: ""
     signal discardRequested()
     signal saveRequested()
 
@@ -17,6 +18,13 @@ Dialog {
     Overlay.modal: Rectangle { color: "#70000000" }
 
     contentItem: ColumnLayout {
+        Label {
+            Layout.fillWidth: true
+            visible: dialog.destination.length > 0
+            text: qsTr("Open %1 after continuing").arg(dialog.destination)
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+        }
         Label {
             Layout.fillWidth: true
             text: dialog.sending ? qsTr("Save the rotation before opening LocalSend?")

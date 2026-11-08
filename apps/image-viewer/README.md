@@ -20,12 +20,17 @@ To update, run `git pull` in the checkout and rerun `./bin/install`.
 To uninstall, run `sudo pacman -R omarchy-image-viewer`.
 
 If the compiler runs out of memory, retry with `JOBS=1 ./bin/install`.
+After updating, close and reopen Image Viewer to run the installed version.
 
 ## Use
 
 Launch **Image Viewer** or choose it from the file manager’s **Open With** menu.
 Hover over or focus the handle at the bottom of the window to reveal the dock.
 Right-click the photo for more actions.
+
+Opening another image from the file manager reuses the running viewer window.
+Unsaved rotations offer Save, Discard, and Cancel before switching images.
+During an operation, the latest requested image waits for it to finish.
 
 The package includes dependencies for JPEG, PNG, WebP, TIFF, GIF, BMP, HEIC,
 AVIF, JPEG XL, and other image decoders. Use
@@ -38,6 +43,7 @@ Animated and multi-page images are shown as a first frame.
 | --- | --- |
 | Left / Right | Previous or next image in natural filename order |
 | Scroll or + / − | Zoom |
+| Trackpad pinch | Zoom around the pointer |
 | Drag | Pan while zoomed |
 | 0 / 1 | Fit to window / actual size |
 | R / Shift+R | Rotate right / left |
@@ -94,6 +100,7 @@ From this directory, run:
 Use `./bin/source` to generate the local source archive used by makepkg. The
 PKGBUILD pins its checksum. For implementation details and testing notes, see
 the [architecture](docs/architecture.md) and [v0.2 QA report](docs/qa-v0.2.md).
+The [v0.3 QA report](docs/qa-v0.3.md) covers launch forwarding and trackpad input.
 
 Filesystem calls on a disconnected mount can block in the kernel. The viewer
 can invalidate their results and keep unrelated worker lanes responsive.

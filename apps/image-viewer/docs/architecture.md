@@ -64,3 +64,26 @@ and emits intent. The upper-right close button uses the window's normal close
 request, including the existing edit prompt. Main owns continuation, so cancel or a failed save cannot
 execute the queued navigation. Operation and status policy use enums, and
 worker message keys translate through the current catalog on the GUI thread.
+
+GUI launches claim one session D-Bus service through `Instance`. Secondary
+processes forward one absolute local path and a launch activation token, then
+exit after acknowledgement. CLI inspection, explicit rotation, decoder listing,
+help, and version complete before claiming GUI ownership. Registration uses
+non-queued, non-replacing ownership. A disappearing owner permits a bounded
+retry. A registered owner that cannot acknowledge produces a launch error.
+The API accepts only protocol version 1 and bounds paths and activation tokens.
+
+Main owns external-open continuation. It cancels an older picker before
+requesting another image and keeps one pending external destination while an
+operation runs. Dirty edits use the same Save / Discard / Cancel flow as
+navigation. The destination used by an in-progress Save is captured separately
+from later incoming requests. Cancel retains the displayed edit, and failed
+Save cannot execute its continuation. Opening the displayed path only activates
+the window unless a newer load must be superseded.
+
+The image surface uses a ContextMenu handler above ordinary controls so
+secondary clicks reach the shared menu without taking left-button drags or
+button clicks. PinchHandler consumes native trackpad scale deltas with no target
+transform. All zoom input runs through the viewport's zoomAt calculation,
+including its pan bounds and delayed detail request. Pinch is disabled while
+the window is inactive, the backend is busy, or a modal overlay is open.

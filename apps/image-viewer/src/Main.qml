@@ -20,12 +20,58 @@ ApplicationWindow {
     property bool showingPhoto: viewer.original.width > 0
     property real pixels: Screen.devicePixelRatio || 1
     property string pendingAction: ""
+    property string pendingPath: ""
+    property string queuedPath: ""
     property bool continueAfterSave: false
     property bool closing: false
     property bool closeAfterCancel: false
     readonly property bool modalOpen: edits.visible || help.visible || contextMenu.visible
 
     onActiveChanged: if (active) viewer.refreshIfStale()
+
+    function requestOpen(path) {
+        if (closing)
+            return
+        closeAfterCancel = false
+        if (path === viewer.path && !viewer.busy) {
+            edits.reject()
+            queuedPath = ""
+            return
+        }
+        viewer.cancelPicker()
+        contextMenu.close()
+        help.close()
+        if (viewer.operating || continueAfterSave) {
+            queuedPath = path
+            return
+        }
+        queuedPath = ""
+        pendingPath = path
+        if (viewer.turns) {
+            pendingAction = "external"
+            edits.open()
+        } else {
+            perform("external", path)
+        }
+    }
+
+    function drainOpen() {
+        if (!queuedPath || viewer.operating || continueAfterSave || edits.visible || closing)
+            return
+        const path = queuedPath
+        queuedPath = ""
+        requestOpen(path)
+    }
+
+    function showContext(x, y, fromDock = false) {
+        if (edits.visible || help.visible)
+            return
+        contextMenu.fromDock = fromDock
+        const margin = contextMenu.margins
+        const left = Math.max(margin, Math.min(x, window.contentItem.width - contextMenu.width - margin))
+        const top = Math.max(margin, Math.min(y, window.contentItem.height - contextMenu.implicitHeight - margin))
+        contextMenu.popup(window.contentItem, left, top)
+    }
 
     function act(action) {
         if (action === "close" && viewer.operating) {
@@ -43,11 +89,15 @@ ApplicationWindow {
         }
     }
 
-    function perform(action) {
+    function perform(action, path = "") {
         switch (action) {
         case "previous": viewer.navigate(-1); break
         case "next": viewer.navigate(1); break
         case "open": viewer.choose(); break
+        case "external":
+            pendingPath = ""
+            viewer.open(path)
+            break
         case "reload": viewer.refresh(true); break
         case "send": viewer.send(); break
         case "close":
@@ -88,12 +138,17 @@ ApplicationWindow {
                 return
             continueAfterSave = false
             const action = pendingAction
+            const path = pendingPath
             pendingAction = ""
+            pendingPath = ""
             if (success)
-                perform(action)
+                perform(action, path)
+            Qt.callLater(window.drainOpen)
         }
 
         function onStateChanged() {
+            if (!viewer.operating)
+                Qt.callLater(window.drainOpen)
             if (viewer.busy) {
                 if (!waitTimer.running)
                     waitTimer.start()
@@ -126,8 +181,9 @@ ApplicationWindow {
         anchors.fill: parent
         backend: viewer
         pixels: window.pixels
-        onContextRequested: (x, y) => contextMenu.popup(x, y)
+        interactive: !window.modalOpen && window.active
     }
+
 
     DockButton {
         id: closeButton
@@ -188,9 +244,7 @@ ApplicationWindow {
             }
         }
         onMoreRequested: edge => {
-            contextMenu.fromDock = true
-            contextMenu.popup(edge.x - contextMenu.width,
-                              Math.max(contextMenu.margins, edge.y - contextMenu.implicitHeight - 6))
+            window.showContext(edge.x - contextMenu.width, edge.y - contextMenu.implicitHeight - 6, true)
         }
     }
 
@@ -230,6 +284,11 @@ ApplicationWindow {
                 onClicked: viewer.dismiss()
             }
         }
+    }
+
+    Item {
+        anchors.fill: parent
+        ContextMenu.onRequested: position => window.showContext(position.x, position.y)
     }
 
     component MenuDivider: MenuSeparator {
@@ -286,18 +345,24 @@ ApplicationWindow {
         anchors.centerIn: parent
         width: Math.min(360, window.width - 24)
         sending: window.pendingAction === "send"
+        destination: window.pendingAction === "external" ? window.pendingPath.split("/").pop() : ""
         canSave: viewer.canSave
         saveBlock: viewer.saveBlock
         onClosed: {
-            if (!window.continueAfterSave)
+            if (!window.continueAfterSave) {
                 window.pendingAction = ""
+                window.pendingPath = ""
+            }
         }
+        onRejected: window.queuedPath = ""
         onDiscardRequested: {
             const action = window.pendingAction
+            const path = window.pendingPath
             edits.close()
             if (action !== "send")
                 viewer.discard()
-            window.perform(action)
+            window.perform(action, path)
+            Qt.callLater(window.drainOpen)
         }
         onSaveRequested: {
             window.continueAfterSave = true
@@ -361,6 +426,7 @@ ApplicationWindow {
                         model: [
                             ["← / →", qsTr("Previous / next image")],
                             ["+ / −", qsTr("Zoom")],
+                            [qsTr("Pinch"), qsTr("Zoom")],
                             ["0", qsTr("Fit to window")],
                             ["1", qsTr("Actual size")],
                             ["R / Shift+R", qsTr("Rotate right / left")],
@@ -419,7 +485,7 @@ ApplicationWindow {
         else
             dock.latched = false
     } }
-    Shortcut { sequence: "Shift+F10"; enabled: !edits.visible && !help.visible; onActivated: contextMenu.popup() }
+    Shortcut { sequence: "Shift+F10"; enabled: !edits.visible && !help.visible; onActivated: window.showContext(window.width / 2, window.height / 2) }
     Shortcut { sequence: "?"; onActivated: help.open() }
     Shortcut { sequences: ["Q", StandardKey.Quit]; onActivated: window.act("close") }
 }

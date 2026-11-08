@@ -22,6 +22,7 @@ class Backend : public QObject
     Q_PROPERTY(uint displaySerial READ displaySerial NOTIFY frameChanged)
     Q_PROPERTY(QSize original READ original NOTIFY frameChanged)
     Q_PROPERTY(QString name READ name NOTIFY stateChanged)
+    Q_PROPERTY(QString path READ path NOTIFY photoChanged)
     Q_PROPERTY(QString status READ status NOTIFY stateChanged)
     Q_PROPERTY(bool statusPersistent READ statusPersistent NOTIFY stateChanged)
     Q_PROPERTY(bool statusSuccess READ statusSuccess NOTIFY stateChanged)
@@ -65,6 +66,7 @@ public:
     bool next() const { return neighbor(1) >= 0; }
     bool canSend() const { return !m_localSend.isEmpty(); }
 
+    QString path() const { return m_path; }
     Q_INVOKABLE void open(const QString &path);
     Q_INVOKABLE void choose();
     Q_INVOKABLE void cancelPicker();

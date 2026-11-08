@@ -1,6 +1,7 @@
 #include "viewer-tests.h"
 #include "backend.h"
 #include "translator.h"
+#include "instance.h"
 
 #include <QDBusConnection>
 #include <QDBusContext>
@@ -16,6 +17,76 @@
 #include <QtTest>
 #include <atomic>
 #include <thread>
+
+void ViewerTests::instanceForwardsLaunches()
+{
+    QTemporaryDir dir;
+    QString error;
+    const auto image = dir.filePath("Photo with spaces å.png");
+    QCOMPARE(Instance::imagePath(QUrl::fromLocalFile(image).toString(), error), image);
+    QVERIFY(error.isEmpty());
+    QVERIFY(Instance::imagePath("https://example.invalid/photo.png", error).isEmpty());
+    QVERIFY(!error.isEmpty());
+    auto environment = QProcessEnvironment::systemEnvironment();
+    environment.insert("VIEWER_INSTANCE_PROBE", "1");
+    QProcess owner;
+    owner.setProcessEnvironment(environment);
+    owner.start(QCoreApplication::applicationFilePath(), {image});
+    QVERIFY(owner.waitForStarted());
+    const auto stop = qScopeGuard([&] { owner.kill(); owner.waitForFinished(); });
+    QTRY_VERIFY(owner.canReadLine());
+    QCOMPARE(QString::fromUtf8(owner.readLine()).trimmed(), image);
+    QProcess follower;
+    follower.setProcessEnvironment(environment);
+    follower.start(QCoreApplication::applicationFilePath(), {dir.filePath("-next.png")});
+    QTRY_COMPARE(follower.state(), QProcess::NotRunning);
+    QCOMPARE(follower.exitCode(), 0);
+    QTRY_VERIFY(owner.canReadLine());
+    QCOMPARE(QString::fromUtf8(owner.readLine()).trimmed(), dir.filePath("-next.png"));
+    follower.start(QCoreApplication::applicationFilePath(), {});
+    QTRY_COMPARE(follower.state(), QProcess::NotRunning);
+    QCOMPARE(follower.exitCode(), 0);
+    QTRY_VERIFY(owner.canReadLine());
+    QCOMPARE(owner.readLine().trimmed(), "activate");
+    QCOMPARE(owner.state(), QProcess::Running);
+    owner.kill();
+    QVERIFY(owner.waitForFinished());
+    follower.start(QCoreApplication::applicationFilePath(), {image});
+    QTRY_VERIFY(follower.canReadLine());
+    QCOMPARE(QString::fromUtf8(follower.readLine()).trimmed(), image);
+    QCOMPARE(follower.state(), QProcess::Running);
+    follower.kill();
+    QVERIFY(follower.waitForFinished());
+
+    QProcess firstLaunch, secondLaunch;
+    firstLaunch.setProcessEnvironment(environment);
+    secondLaunch.setProcessEnvironment(environment);
+    firstLaunch.start(QCoreApplication::applicationFilePath(), {image});
+    secondLaunch.start(QCoreApplication::applicationFilePath(), {dir.filePath("second.png")});
+    QVERIFY(firstLaunch.waitForStarted());
+    QVERIFY(secondLaunch.waitForStarted());
+    const auto stopPair = qScopeGuard([&] {
+        for (auto *process : {&firstLaunch, &secondLaunch}) {
+            if (process->state() != QProcess::NotRunning) {
+                process->kill();
+                process->waitForFinished();
+            }
+        }
+    });
+    QTRY_VERIFY((firstLaunch.state() == QProcess::NotRunning)
+                != (secondLaunch.state() == QProcess::NotRunning));
+    auto *forwarded = firstLaunch.state() == QProcess::NotRunning ? &firstLaunch : &secondLaunch;
+    auto *primary = forwarded == &firstLaunch ? &secondLaunch : &firstLaunch;
+    QCOMPARE(forwarded->exitCode(), 0);
+    QTRY_VERIFY(primary->bytesAvailable() > 0);
+    QByteArray received;
+    QTRY_VERIFY(([&] {
+        received += primary->readAllStandardOutput();
+        return received.count('\n') == 2;
+    })());
+    QVERIFY(received.contains(image.toUtf8()));
+    QVERIFY(received.contains("second.png"));
+}
 
 class FakePortalRequest : public QObject
 {
