@@ -20,6 +20,11 @@ Save / Discard / Cancel policy and shows the pending destination in the prompt.
   Git whitespace checks pass.
 - The release binary reports 0.3.0 and successfully inspects and rotates a
   disposable Qt-generated PNG through the CLI.
+- The clean Arch package builds with its checks enabled. Installed package
+  version is 0.3.0-1 and the installed executable reports 0.3.0. Two launches
+  through the installed desktop entry display successive synthetic images in
+  one window with the same process ID. Its executable resolves to the packaged
+  system binary. Installed-launch logs contain no QML warnings.
 
 **Native QA boundaries**
 
