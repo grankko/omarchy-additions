@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ID=grankko.hardware-status
+[[ -n ${XDG_RUNTIME_DIR:-} && -d $XDG_RUNTIME_DIR && -O $XDG_RUNTIME_DIR ]] || { echo 'Run from your desktop session' >&2; exit 1; }
+exec 9>"$XDG_RUNTIME_DIR/grankko-hardware-status.lock"
+flock 9
+BACKUPS="$HOME/.local/state/omarchy-additions/backups"
+mkdir -p "$BACKUPS"
+BACKUP=$(mktemp -d "$BACKUPS/hardware-uninstall-XXXXXXXX")
+if [[ -f $HOME/.config/omarchy/shell.json ]]; then
+  cp -p "$HOME/.config/omarchy/shell.json" "$BACKUP/shell.json"
+fi
+omarchy plugin remove "$ID" --yes
+printf 'Removed Hardware Status. Previous bar configuration: %s\n' "$BACKUP/shell.json"

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ID=grankko.hardware-status
+for tool in omarchy omarchy-shell jq sha256sum flock; do
+  command -v "$tool" >/dev/null || { echo "Missing dependency: $tool" >&2; exit 1; }
+done
+[[ -n ${XDG_RUNTIME_DIR:-} && -d $XDG_RUNTIME_DIR && -O $XDG_RUNTIME_DIR ]] || { echo 'Run from your desktop session' >&2; exit 1; }
+exec 9>"$XDG_RUNTIME_DIR/grankko-hardware-status.lock"
+flock 9
+omarchy plugin validate "$ROOT"
+BACKUPS="$HOME/.local/state/omarchy-additions/backups"
+mkdir -p "$BACKUPS" "$HOME/.config/omarchy/plugins"
+BACKUP=$(mktemp -d "$BACKUPS/hardware-install-XXXXXXXX")
+if [[ -f $HOME/.config/omarchy/shell.json ]]; then
+  cp -p "$HOME/.config/omarchy/shell.json" "$BACKUP/shell.json"
+fi
+DEST="$HOME/.config/omarchy/plugins/$ID"
+[[ ! -L $DEST ]] || { echo 'Existing plugin is a symlink; refusing replacement' >&2; exit 1; }
+STAGE="$BACKUP/new-plugin"
+mkdir "$STAGE"
+cp -a "$ROOT"/{manifest.json,Panel.qml,Model.js,scripts} "$STAGE/"
+REV=$(cd "$STAGE" && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-16)
+mkdir -p "$STAGE/revisions/r$REV"
+cp -a "$STAGE"/{Panel.qml,Model.js,scripts} "$STAGE/revisions/r$REV/"
+jq --arg entry "revisions/r$REV/Panel.qml" '.entryPoints.barWidget = $entry' "$STAGE/manifest.json" > "$STAGE/manifest.next.json"
+mv "$STAGE/manifest.next.json" "$STAGE/manifest.json"
+omarchy plugin validate "$STAGE"
+if [[ -e $DEST ]]; then mv "$DEST" "$BACKUP/previous-plugin"; fi
+mv "$STAGE" "$DEST"
+rescanned=false
+for ((i=0; i<30; i++)); do
+  if omarchy-shell shell rescanPlugins >/dev/null 2>&1; then
+    rescanned=true
+    break
+  fi
+  sleep 0.2
+done
+[[ $rescanned == true ]] || { echo 'The shell did not respond after installation' >&2; exit 1; }
+found=false
+for ((i=0; i<30; i++)); do
+  if omarchy plugin list --json 2>/dev/null | jq -e --arg id "$ID" 'any(.[]; .id == $id)' >/dev/null; then
+    found=true
+    break
+  fi
+  sleep 0.2
+done
+[[ $found == true ]] || { echo 'The shell did not discover Hardware Status' >&2; exit 1; }
+enabled=false
+for ((i=0; i<30; i++)); do
+  if omarchy plugin enable "$ID" --section centerEnd --after omarchy.weather >/dev/null 2>&1; then
+    enabled=true
+    break
+  fi
+  sleep 0.2
+done
+[[ $enabled == true ]] || { echo 'Could not enable Hardware Status in the bar' >&2; exit 1; }
+printf 'Installed Hardware Status after Weather. Backup: %s\n' "$BACKUP"

@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# A single short-lived process reads only unprivileged kernel interfaces.
+# SAMPLE_ROOT is for fixture tests; the installed widget always uses /.
+root=${SAMPLE_ROOT:-}
+read_number() {
+  REPLY=
+  [[ -r $1 ]] || return 1
+  IFS= read -r REPLY < "$1" || [[ -n $REPLY ]] || return 1
+  [[ $REPLY =~ ^[0-9]+$ ]] || return 1
+}
+clean() {
+  CLEANED=${1//$'\t'/ }
+  CLEANED=${CLEANED//$'\n'/ }
+  CLEANED=${CLEANED//$'\r'/ }
+  CLEANED=${CLEANED:0:80}
+}
+
+total= available= swap_total= swap_free=
+if [[ -r $root/proc/meminfo ]]; then
+  while read -r key value unit; do
+    case $key in
+      MemTotal:) total=$value ;;
+      MemAvailable:) available=$value ;;
+      SwapTotal:) swap_total=$value ;;
+      SwapFree:) swap_free=$value ;;
+    esac
+  done < "$root/proc/meminfo"
+fi
+printf 'M\t%s\t%s\t%s\t%s\n' "$total" "$available" "$swap_total" "$swap_free"
+
+count=0
+for file in "$root"/sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
+  [[ -e $file ]] || continue
+  cpu=${file%/cpufreq/scaling_cur_freq}
+  cpu=${cpu##*/cpu}
+  if read_number "$file"; then
+    current=$REPLY
+    max=
+    limit=
+    if read_number "${file%/scaling_cur_freq}/cpuinfo_max_freq"; then max=$REPLY; fi
+    if read_number "${file%/scaling_cur_freq}/scaling_max_freq"; then limit=$REPLY; fi
+    printf 'C\t%s\t%s\t%s\t%s\n' "$cpu" "$current" "$max" "$limit"
+    ((count+=1))
+  fi
+  ((count < 512)) || break
+done
+
+count=0
+for chip in "$root"/sys/class/hwmon/hwmon[0-9]*; do
+  [[ -d $chip && -r $chip/name ]] || continue
+  IFS= read -r name < "$chip/name" || true
+  clean "$name"
+  name=$CLEANED
+  for file in "$chip"/temp[0-9]*_input; do
+    [[ -e $file ]] || continue
+    channel=${file##*/temp}
+    channel=${channel%_input}
+    label="Temp $channel"
+    if [[ -r $chip/temp${channel}_label ]]; then
+      IFS= read -r label < "$chip/temp${channel}_label" || true
+    fi
+    if read_number "$file"; then
+      clean "$label"
+      printf 'T\t%s\t%s\t%s\n' "$name" "$CLEANED" "$REPLY"
+      ((count+=1))
+    fi
+    ((count < 64)) || break 2
+  done
+done

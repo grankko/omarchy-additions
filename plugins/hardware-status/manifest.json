@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "grankko.hardware-status",
+  "name": "Hardware Status",
+  "version": "0.1.0",
+  "author": "grankko",
+  "description": "Memory, CPU frequency and temperature in the Omarchy bar",
+  "kinds": ["bar-widget"],
+  "entryPoints": {"barWidget": "Panel.qml"},
+  "barWidget": {
+    "displayName": "Hardware Status",
+    "description": "Memory, CPU frequency and temperature",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "centerEnd"
+  }
+}
