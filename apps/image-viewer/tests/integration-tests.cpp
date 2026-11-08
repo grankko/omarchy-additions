@@ -18,6 +18,22 @@
 #include <atomic>
 #include <thread>
 
+void ViewerTests::instancePreservesFocusForForwardedImages()
+{
+    Instance instance;
+    QSignalSpy requests(&instance, &Instance::openRequested);
+    QCOMPARE(instance.start("/synthetic/first.png", {}), Instance::Result::Owner);
+    instance.setReady();
+    QCOMPARE(requests.size(), 1);
+    QVERIFY(requests.takeFirst().at(2).toBool());
+    QVERIFY(instance.Open(1, "/synthetic/second.png", {}));
+    QCOMPARE(requests.size(), 1);
+    QVERIFY(!requests.takeFirst().at(2).toBool());
+    QVERIFY(instance.Open(1, {}, {}));
+    QCOMPARE(requests.size(), 1);
+    QVERIFY(requests.takeFirst().at(2).toBool());
+}
+
 void ViewerTests::instanceForwardsLaunches()
 {
     QTemporaryDir dir;

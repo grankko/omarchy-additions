@@ -89,7 +89,7 @@ bool Instance::Open(uint protocol, const QString &path, const QString &token)
         return false;
     }
     if (m_ready)
-        emit openRequested(path, token);
+        emit openRequested(path, token, path.isEmpty());
     else
         m_pending = Request{path, token};
     return true;
@@ -100,7 +100,7 @@ void Instance::setReady()
     m_ready = true;
     if (m_pending) {
         const auto request = std::exchange(m_pending, std::nullopt);
-        emit openRequested(request->path, request->token);
+        emit openRequested(request->path, request->token, true);
     }
 }
 

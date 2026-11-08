@@ -47,3 +47,22 @@ launcher's token when available and follows compositor focus policy.
 All images used for these checks are synthetic. CLI overwrite checks use a
 disposable copy. The UI checks use isolated D-Bus sessions, temporary theme and
 language fixtures, and application-local logs.
+
+**0.3.1 focus correction**
+
+Opening a forwarded photo in a visible window no longer requests activation.
+This preserves focus in the file manager and avoids a focus-driven pointer
+warp during browsing. Initial launch, opening the app without a photo, and
+restoring a minimized window continue to request activation. A focused
+regression checks the three request types. The viewer suite reports 32 passes
+and the expected opt-in benchmark skip. The USB suite reports 22 passes.
+A native Wayland launch-forwarding check displayed successive synthetic images
+in one process and confirmed that the active application's process ID and
+cursor coordinates stayed unchanged across the forwarded open.
+
+Secondary-click feedback was resolved through the existing touchpad settings.
+The user confirmed that both two-finger tapping and a physical click with two
+fingers produce a context menu. The configured clickfinger mode uses finger
+count for physical clicks. A one-finger click at the bottom right therefore
+does not test the same gesture as button-area mode.
+[libinput clickpad behavior](https://wayland.freedesktop.org/libinput/doc/latest/clickpad-softbuttons.html)

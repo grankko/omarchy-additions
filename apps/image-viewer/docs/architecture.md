@@ -72,6 +72,11 @@ help, and version complete before claiming GUI ownership. Registration uses
 non-queued, non-replacing ownership. A disappearing owner permits a bounded
 retry. A registered owner that cannot acknowledge produces a launch error.
 The API accepts only protocol version 1 and bounds paths and activation tokens.
+Initial GUI launch, an explicit activation without a file, and restoring a
+minimized window request activation. Forwarding an image to a visible window
+preserves the caller's focus, avoiding focus-driven cursor warps while browsing
+in a file manager. Activation tokens are consumed only when activation is
+requested.
 
 Main owns external-open continuation. It cancels an older picker before
 requesting another image and keeps one pending external destination while an

@@ -136,13 +136,17 @@ int main(int argc, char *argv[])
     if (!window)
         return 1;
     QObject::connect(&instance, &Instance::openRequested, window,
-                     [window](const QString &image, const QString &token) {
-        if (window->visibility() == QWindow::Minimized)
+                     [window](const QString &image, const QString &token, bool activate) {
+        const bool minimized = window->visibility() == QWindow::Minimized;
+        if (minimized)
             window->showNormal();
-        if (!token.isEmpty())
-            qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
-        const auto clearToken = qScopeGuard([] { qunsetenv("XDG_ACTIVATION_TOKEN"); });
-        window->requestActivate();
+        // Browsing successive files should leave focus and the pointer in Files.
+        if (activate || minimized) {
+            if (!token.isEmpty())
+                qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
+            const auto clearToken = qScopeGuard([] { qunsetenv("XDG_ACTIVATION_TOKEN"); });
+            window->requestActivate();
+        }
         if (!image.isEmpty())
             QMetaObject::invokeMethod(window, "requestOpen", Q_ARG(QVariant, image));
     });

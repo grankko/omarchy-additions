@@ -29,6 +29,8 @@ Hover over or focus the handle at the bottom of the window to reveal the dock.
 Right-click the photo for more actions.
 
 Opening another image from the file manager reuses the running viewer window.
+If that window is already visible, focus stays in the file manager while the
+picture updates. Launching Image Viewer without a file activates its window.
 Unsaved rotations offer Save, Discard, and Cancel before switching images.
 During an operation, the latest requested image waits for it to finish.
 

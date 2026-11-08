@@ -24,7 +24,7 @@ public slots:
     bool Open(uint protocol, const QString &path, const QString &token);
 
 signals:
-    void openRequested(const QString &path, const QString &token);
+    void openRequested(const QString &path, const QString &token, bool activate);
 
 private:
     struct Request { QString path, token; };

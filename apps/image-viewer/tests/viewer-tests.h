@@ -42,4 +42,5 @@ private slots:
     void qmlNativePinchUsesViewportZoom();
     void qmlExternalOpenProtectsEdits();
     void instanceForwardsLaunches();
+    void instancePreservesFocusForForwardedImages();
 };
